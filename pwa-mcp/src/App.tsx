@@ -71,7 +71,12 @@ function App() {
       .replace(/Wind Speed: ([^,\n]+)/g, '💨 **$1**')
       .replace(/Short Forecast: ([^,\n]+)/g, '☁️ **$1**')
       .replace(/(\d{1,2}:\d{2}\s*(AM|PM))/g, '🕐 **$1**')
-      .replace(/Today|Tonight|Tomorrow/g, '📅 **$&**');
+      .replace(/Today|Tonight|Tomorrow/g, '📅 **$&**')
+      // Weather alerts formatting
+      .replace(/Severity: (\w+)/g, '⚠️ **Severity: $1**')
+      .replace(/Urgency: (\w+)/g, '🚨 **Urgency: $1**')
+      .replace(/(Weather Alert|Warning|Watch|Advisory)/gi, '🌪️ **$1**')
+      .replace(/Headline: ([^\n]+)/g, '📢 **$1**');
   };
 
   const handleSendMessage = async () => {
@@ -192,7 +197,10 @@ function App() {
           ))}
           {geminiResponses.length === 0 && (
             <div className="empty-state">
-              Ask me about the weather! Try: "Get weather forecast for Providence RI"
+              Ask me about the weather! Try:<br/>
+              • "Get weather forecast for Providence RI"<br/>
+              • "Are there any weather alerts in California?"<br/>
+              • "Show me weather warnings for Texas"
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -204,7 +212,7 @@ function App() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about weather (e.g., 'Get weather forecast for Providence RI')"
+          placeholder="Ask about weather (e.g., 'Get weather forecast for Providence RI' or 'Are there any weather alerts in California?')"
           onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
           disabled={isLoading || connectionStatus === 'disconnected'}
         />

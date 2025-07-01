@@ -24,7 +24,9 @@ app = FastAPI()
 
 @server.tool()
 def get_weather_alerts(state: str) -> List[Dict[str, Any]]:
-    """Get weather alerts for the given US state."""
+    """Get active weather alerts for the given US state. Requires a 2-letter US state code.
+    Examples: CA (California), TX (Texas), FL (Florida), NY (New York), RI (Rhode Island).
+    Use this when users ask about weather alerts, warnings, watches, or emergency weather conditions."""
     if not state or len(state) != 2:
         raise ValueError("State must be a valid 2-letter US state code")
     

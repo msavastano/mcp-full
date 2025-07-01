@@ -106,11 +106,13 @@ The client will start on `http://localhost:5174` (or another port if 5174 is in 
 
 1. **Start both servers** (MCP server on :8765, React client on :5174)
 2. **Open the React app** in your browser
-3. **Wait for connection** - You should see "Connected (1 tools available)" in the header
+3. **Wait for connection** - You should see "Connected (2 tools available)" in the header
 4. **Ask for weather**: Type a query like:
    - "Get weather forecast for Providence RI"
-   - "What's the weather like in Boston MA?"
+   - "What's the weather like in Boston MA?" 
    - "Show me the forecast for New York City"
+   - "Are there any weather alerts in California?"
+   - "Show me weather warnings for Texas"
 
 ## How It Works
 
@@ -139,6 +141,14 @@ User ↔ React Client ↔ WebSocket ↔ MCP Server ↔ Weather API
 - **Returns**: 7-day weather forecast with temperature, wind, and conditions
 
 The tool description includes example coordinates for major cities, allowing Gemini to convert location names to coordinates automatically.
+
+### `get_weather_alerts`
+- **Description**: Get active weather alerts for US states
+- **Parameters**:
+  - `state` (string): 2-letter US state code (e.g., CA, TX, FL, NY, RI)
+- **Returns**: List of active weather alerts including headline, severity, urgency, and description
+
+Use this tool when users ask about weather alerts, warnings, watches, or emergency weather conditions.
 
 ## Development
 
@@ -189,8 +199,9 @@ npm run preview
 - Verify firewall settings allow localhost connections
 
 **Tool calls not working**
-- Make sure to ask for "weather forecast" (not "weather alerts")
-- Include a specific location in your query
+- For forecasts: Ask for "weather forecast" with a specific location
+- For alerts: Ask for "weather alerts" with a US state name
+- Include a specific location or state in your query
 - Check browser console for detailed error messages
 
 ## Security Notes
