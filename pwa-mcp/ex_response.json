@@ -1,0 +1,19 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "functionCall": {
+              "name": "get_weather_alerts",
+              "args": {
+                "state": "CA"
+              }
+            }
+          }
+        ],
+        "role": "model"
+      }
+    }
+  ]
+}

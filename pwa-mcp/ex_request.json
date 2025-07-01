@@ -1,0 +1,50 @@
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Are there any weather alerts for California?"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "function_declarations": [
+        {
+          "name": "get_weather_alerts",
+          "description": "Get weather alerts for the given US state.",
+          "parameters": {
+            "type": "OBJECT",
+            "properties": {
+              "state": {
+                "type": "STRING",
+                "description": "The 2-letter US state code (e.g., CA, NY)."
+              }
+            },
+            "required": ["state"]
+          }
+        },
+        {
+          "name": "get_weather_forecast",
+          "description": "Get weather forecast for the given coordinates.",
+          "parameters": {
+            "type": "OBJECT",
+            "properties": {
+              "latitude": {
+                "type": "NUMBER",
+                "description": "The latitude for the forecast location."
+              },
+              "longitude": {
+                "type": "NUMBER",
+                "description": "The longitude for the forecast location."
+              }
+            },
+            "required": ["latitude", "longitude"]
+          }
+        }
+      ]
+    }
+  ]
+}

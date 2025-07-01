@@ -1,0 +1,106 @@
+{
+    "jsonrpc": "2.0",
+    "id": 4,
+    "result": {
+        "tools": [
+            {
+                "name": "get_weather_alerts",
+                "description": "Get weather alerts for the given US state.",
+                "inputSchema": {
+                    "properties": {
+                        "state": {
+                            "title": "State",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "state"
+                    ],
+                    "title": "get_weather_alertsArguments",
+                    "type": "object"
+                },
+                "outputSchema": {
+                    "properties": {
+                        "result": {
+                            "items": {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            "title": "Result",
+                            "type": "array"
+                        }
+                    },
+                    "required": [
+                        "result"
+                    ],
+                    "title": "get_weather_alertsOutput",
+                    "type": "object"
+                }
+            },
+            {
+                "name": "get_weather_forecast",
+                "description": "Get weather forecast for the given coordinates.",
+                "inputSchema": {
+                    "properties": {
+                        "latitude": {
+                            "title": "Latitude",
+                            "type": "number"
+                        },
+                        "longitude": {
+                            "title": "Longitude",
+                            "type": "number"
+                        }
+                    },
+                    "required": [
+                        "latitude",
+                        "longitude"
+                    ],
+                    "title": "get_weather_forecastArguments",
+                    "type": "object"
+                },
+                "outputSchema": {
+                    "properties": {
+                        "result": {
+                            "additionalProperties": true,
+                            "title": "Result",
+                            "type": "object"
+                        }
+                    },
+                    "required": [
+                        "result"
+                    ],
+                    "title": "get_weather_forecastOutput",
+                    "type": "object"
+                }
+            },
+            {
+                "name": "get_joke",
+                "description": "Get a joke, optionally by category",
+                "inputSchema": {
+                    "properties": {
+                        "category": {
+                            "default": "Any",
+                            "title": "Category",
+                            "type": "string"
+                        }
+                    },
+                    "title": "get_jokeArguments",
+                    "type": "object"
+                },
+                "outputSchema": {
+                    "properties": {
+                        "result": {
+                            "title": "Result",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "result"
+                    ],
+                    "title": "get_jokeOutput",
+                    "type": "object"
+                }
+            }
+        ]
+    }
+}
