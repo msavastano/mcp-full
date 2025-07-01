@@ -5,22 +5,82 @@ import { webSocketService } from './websocket';
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 export const callGemini = async (prompt: string, tools: any[], resources: any[] = []) => {
-  // Add a resource reading tool for animals if resources are available
-  const resourceTools = resources.length > 0 ? [{
-    name: "read_animal_info",
-    description: "Read information about animals (dolphin, elephant, lion) from resources",
-    parameters: {
-      type: "object",
-      properties: {
-        animal: {
-          type: "string",
-          description: "The animal to get information about (dolphin, elephant, lion, or cloudwhale)",
-          enum: ["dolphin", "elephant", "lion", "cloudwhale"]
-        }
-      },
-      required: ["animal"]
+  // Add resource reading tools if resources are available
+  const resourceTools = resources.length > 0 ? [
+    {
+      name: "read_animal_info",
+      description: "Read basic information about animals from static resources",
+      parameters: {
+        type: "object",
+        properties: {
+          animal: {
+            type: "string",
+            description: "The animal to get information about (dolphin, elephant, lion, or cloudwhale)",
+            enum: ["dolphin", "elephant", "lion", "cloudwhale"]
+          }
+        },
+        required: ["animal"]
+      }
+    },
+    {
+      name: "get_weather_report",
+      description: "Generate dynamic weather report for any location and time period using resource templates",
+      parameters: {
+        type: "object",
+        properties: {
+          location: {
+            type: "string",
+            description: "Location for weather report (providence-ri, boston-ma, new-york-ny, los-angeles-ca, chicago-il)"
+          },
+          days: {
+            type: "string",
+            description: "Number of days for forecast (1-14)"
+          }
+        },
+        required: ["location", "days"]
+      }
+    },
+    {
+      name: "get_animal_facts",
+      description: "Get specific facts about animals by category using dynamic resource templates",
+      parameters: {
+        type: "object",
+        properties: {
+          species: {
+            type: "string",
+            description: "Animal species (dolphin, elephant, lion, cloudwhale)"
+          },
+          category: {
+            type: "string",
+            description: "Fact category (habitat, diet, behavior, conservation, physical, reproduction)"
+          }
+        },
+        required: ["species", "category"]
+      }
+    },
+    {
+      name: "get_climate_data",
+      description: "Get historical climate data for specific location and time using resource templates",
+      parameters: {
+        type: "object",
+        properties: {
+          location: {
+            type: "string",
+            description: "Location for climate data"
+          },
+          year: {
+            type: "string",
+            description: "Year for climate data (1900-2024)"
+          },
+          month: {
+            type: "string",
+            description: "Month for climate data (1-12)"
+          }
+        },
+        required: ["location", "year", "month"]
+      }
     }
-  }] : [];
+  ] : [];
 
   const allTools = [...tools, ...resourceTools];
 
@@ -72,13 +132,44 @@ export const callGemini = async (prompt: string, tools: any[], resources: any[] 
           let toolResponse;
           
           if (functionCall.functionCall.name === "read_animal_info") {
-            // Handle resource reading for animals
+            // Handle static animal resource reading
             const animal = functionCall.functionCall.args?.animal || functionCall.functionCall.arguments?.animal;
             const resourceUri = `animal://${animal}`;
-            console.log('Reading resource:', resourceUri);
+            console.log('Reading static resource:', resourceUri);
             
             toolResponse = await webSocketService.readResource(resourceUri);
             console.log('Resource response:', JSON.stringify(toolResponse, null, 2));
+          } else if (functionCall.functionCall.name === "get_weather_report") {
+            // Handle dynamic weather report resource template
+            const args = functionCall.functionCall.args || functionCall.functionCall.arguments;
+            const location = args?.location;
+            const days = args?.days;
+            const resourceUri = `weather://report/${location}/${days}`;
+            console.log('Reading dynamic weather resource:', resourceUri);
+            
+            toolResponse = await webSocketService.readResource(resourceUri);
+            console.log('Weather resource response:', JSON.stringify(toolResponse, null, 2));
+          } else if (functionCall.functionCall.name === "get_animal_facts") {
+            // Handle dynamic animal facts resource template
+            const args = functionCall.functionCall.args || functionCall.functionCall.arguments;
+            const species = args?.species;
+            const category = args?.category;
+            const resourceUri = `animal://facts/${species}/${category}`;
+            console.log('Reading dynamic animal facts resource:', resourceUri);
+            
+            toolResponse = await webSocketService.readResource(resourceUri);
+            console.log('Animal facts resource response:', JSON.stringify(toolResponse, null, 2));
+          } else if (functionCall.functionCall.name === "get_climate_data") {
+            // Handle dynamic climate data resource template
+            const args = functionCall.functionCall.args || functionCall.functionCall.arguments;
+            const location = args?.location;
+            const year = args?.year;
+            const month = args?.month;
+            const resourceUri = `climate://${location}/${year}/${month}`;
+            console.log('Reading dynamic climate resource:', resourceUri);
+            
+            toolResponse = await webSocketService.readResource(resourceUri);
+            console.log('Climate resource response:', JSON.stringify(toolResponse, null, 2));
           } else {
             // Handle regular tool calls
             const mcpRequest = {

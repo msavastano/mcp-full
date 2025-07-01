@@ -118,6 +118,173 @@ def get_animal_description(animal_name: str) -> str:
         return f"Description for {animal_name} not found."
 
 
+@server.resource("weather://report/{location}/{days}", name="weather-report", description="Generate dynamic weather report for location and days")
+def get_weather_report(location: str, days: str) -> str:
+    """Generate a formatted weather report for a specific location and number of days."""
+    try:
+        days_int = int(days)
+        if days_int < 1 or days_int > 14:
+            return "Error: Days must be between 1 and 14"
+        
+        # Parse location to get coordinates (simplified for demo)
+        location_coords = {
+            "providence-ri": (41.8240, -71.4128),
+            "boston-ma": (42.3601, -71.0589),
+            "new-york-ny": (40.7128, -74.0060),
+            "los-angeles-ca": (34.0522, -118.2437),
+            "chicago-il": (41.8781, -87.6298)
+        }
+        
+        location_key = location.lower().replace(" ", "-").replace(",", "")
+        if location_key not in location_coords:
+            return f"Weather Report for {location}\n\nLocation not found in our database. Available locations: Providence-RI, Boston-MA, New-York-NY, Los-Angeles-CA, Chicago-IL"
+        
+        lat, lon = location_coords[location_key]
+        
+        # This would normally use the weather API, but for demo we'll generate a sample report
+        report = f"""# Weather Report for {location.title()}
+        
+**Location**: {location.title()} ({lat}, {lon})
+**Forecast Period**: {days} days
+**Generated**: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+## Summary
+This is a dynamically generated weather report using MCP resource templates. In a real implementation, this would call the weather APIs with the provided coordinates and return a {days}-day forecast.
+
+## Resource Template Demo
+- **Template URI**: weather://report/{location}/{days}
+- **Resolved URI**: weather://report/{location}/{days}
+- **Dynamic Content**: This content is generated on-demand based on the parameters in the URI template.
+
+*Note: This demonstrates MCP resource templates - the ability to create dynamic resources using parameterized URIs.*"""
+        
+        return report
+        
+    except ValueError:
+        return "Error: Days parameter must be a valid number"
+    except Exception as e:
+        return f"Error generating weather report: {str(e)}"
+
+
+@server.resource("animal://facts/{species}/{category}", name="animal-facts", description="Get specific facts about animals by category")
+def get_animal_facts(species: str, category: str) -> str:
+    """Get specific facts about an animal in a particular category."""
+    
+    # Available categories
+    valid_categories = ["habitat", "diet", "behavior", "conservation", "physical", "reproduction"]
+    
+    if category.lower() not in valid_categories:
+        return f"Invalid category '{category}'. Available categories: {', '.join(valid_categories)}"
+    
+    # Sample fact database (in real implementation, this might query a database)
+    animal_facts = {
+        "dolphin": {
+            "habitat": "Dolphins live in oceans worldwide, preferring warm, shallow waters near coastlines. They can dive up to 1,000 feet deep.",
+            "diet": "Dolphins are carnivores that primarily eat fish, squid, and crustaceans. They use echolocation to hunt in murky waters.",
+            "behavior": "Dolphins are highly social animals that live in pods of 2-30 individuals. They communicate through clicks, whistles, and body language.",
+            "conservation": "Most dolphin species are stable, but some like the Maui's dolphin are critically endangered with fewer than 50 individuals remaining.",
+            "physical": "Dolphins have streamlined bodies, blowholes for breathing, and can reach speeds up to 25 mph. Their brains are highly developed.",
+            "reproduction": "Dolphins have a gestation period of 12 months and typically give birth to a single calf every 2-3 years."
+        },
+        "elephant": {
+            "habitat": "Elephants live in savannas, forests, and grasslands across Africa and Asia. They require large territories and access to water sources.",
+            "diet": "Elephants are herbivores that consume up to 300 pounds of vegetation daily, including grasses, fruits, bark, and roots.",
+            "behavior": "Elephants live in matriarchal herds led by the oldest female. They show remarkable intelligence, empathy, and memory.",
+            "conservation": "African elephants are endangered due to poaching and habitat loss. Asian elephants are critically endangered with only 40,000-50,000 remaining.",
+            "physical": "Elephants are the largest land mammals, weighing up to 14,000 pounds. Their trunks contain over 40,000 muscles.",
+            "reproduction": "Elephants have a 22-month gestation period, the longest of any mammal, and give birth to calves weighing 200-300 pounds."
+        },
+        "lion": {
+            "habitat": "Lions primarily live in African savannas and grasslands. A small population of Asiatic lions exists in India's Gir Forest.",
+            "diet": "Lions are apex predators that hunt large ungulates like zebras, wildebeest, and buffalo. They require 11-15 pounds of meat daily.",
+            "behavior": "Lions are the only social cats, living in prides of 4-6 related females, their cubs, and 1-4 males. They hunt cooperatively.",
+            "conservation": "Lions are vulnerable with populations declining 43% over the past 21 years. Only 20,000-25,000 remain in the wild.",
+            "physical": "Male lions weigh 330-550 pounds and have distinctive manes. They can reach speeds of 50 mph in short bursts.",
+            "reproduction": "Lions have a 3.5-month gestation period and give birth to 1-4 cubs. Cubs stay with the pride for about 2 years."
+        },
+        "cloudwhale": {
+            "habitat": "Cloudwhales inhabit the upper atmosphere at altitudes of 15,000-25,000 feet, following jet streams and weather patterns.",
+            "diet": "Cloudwhales feed on atmospheric moisture and electrical energy from lightning, which they absorb through specialized dorsal fins.",
+            "behavior": "These ethereal beings migrate seasonally with weather patterns and perform synchronized aerial dances during mating season.",
+            "conservation": "Critically Ethereal - only 47 individuals remain due to climate change and increased air traffic disrupting their habitat.",
+            "physical": "Cloudwhales are 80-120 feet long, semi-translucent, and surprisingly light (2-3 tons) due to hollow, gas-filled bones.",
+            "reproduction": "Cloudwhales reproduce through atmospheric crystallization during storm systems, with offspring emerging from cumulonimbus clouds."
+        }
+    }
+    
+    species_key = species.lower()
+    category_key = category.lower()
+    
+    if species_key not in animal_facts:
+        return f"No facts available for '{species}'. Available animals: {', '.join(animal_facts.keys())}"
+    
+    fact = animal_facts[species_key].get(category_key, f"No {category} facts available for {species}")
+    
+    return f"""# {species.title()} - {category.title()} Facts
+
+**Species**: {species.title()}
+**Category**: {category.title()}
+**Resource URI**: animal://facts/{species}/{category}
+
+## {category.title()} Information
+
+{fact}
+
+---
+*This information was dynamically retrieved using MCP resource templates.*"""
+
+
+@server.resource("climate://{location}/{year}/{month}", name="climate-data", description="Get historical climate data for specific location and time")
+def get_climate_data(location: str, year: str, month: str) -> str:
+    """Get historical climate data for a specific location and time period."""
+    try:
+        year_int = int(year)
+        month_int = int(month)
+        
+        if year_int < 1900 or year_int > 2024:
+            return "Error: Year must be between 1900 and 2024"
+        
+        if month_int < 1 or month_int > 12:
+            return "Error: Month must be between 1 and 12"
+        
+        month_names = ["", "January", "February", "March", "April", "May", "June",
+                      "July", "August", "September", "October", "November", "December"]
+        
+        # Sample climate data (in real implementation, this would query historical weather APIs)
+        climate_report = f"""# Climate Data for {location.title()}
+
+**Location**: {location.title()}
+**Period**: {month_names[month_int]} {year}
+**Resource URI**: climate://{location}/{year}/{month}
+**Generated**: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+## Historical Climate Summary
+
+This is a demonstration of dynamic climate data retrieval using MCP resource templates. In a real implementation, this would provide:
+
+- **Average Temperature**: Historical temperature data for the specified month/year
+- **Precipitation**: Rainfall and snowfall records
+- **Weather Patterns**: Typical weather conditions for the period
+- **Climate Anomalies**: Unusual weather events during this time
+- **Seasonal Trends**: How this period compared to historical averages
+
+## Resource Template Features
+
+- **Dynamic URI Resolution**: climate://{location}/{year}/{month}
+- **Parameter Validation**: Year (1900-2024), Month (1-12)
+- **On-Demand Generation**: Content created when accessed
+- **Scalable Content**: Can generate data for any valid parameter combination
+
+*This demonstrates how MCP resource templates enable infinite content combinations without pre-creating static files.*"""
+        
+        return climate_report
+        
+    except ValueError:
+        return "Error: Year and month must be valid numbers"
+    except Exception as e:
+        return f"Error generating climate data: {str(e)}"
+
+
 @server.prompt()
 def weather_briefing(location: str, include_alerts: bool = True) -> str:
     """Generate a comprehensive weather briefing for a specific location.

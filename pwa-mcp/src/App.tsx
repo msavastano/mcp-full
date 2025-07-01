@@ -291,13 +291,13 @@ function App() {
           ))}
           {geminiResponses.length === 0 && (
             <div className="empty-state">
-              Ask me about the weather or animals! Try:<br/>
+              Ask me about weather, animals, or climate data! Try:<br/>
               • "Get weather forecast for Providence RI"<br/>
-              • "Are there any weather alerts in California?"<br/>
-              • "Tell me about dolphins"<br/>
-              • "What do you know about elephants?"<br/>
-              • "Show me information about lions"<br/>
-              • "Tell me about cloudwhales" (🦄 unique to our MCP resources!)
+              • "Generate a 7-day weather report for Boston"<br/>
+              • "Tell me about dolphin behavior facts"<br/>
+              • "What are cloudwhale conservation facts?"<br/>
+              • "Show me climate data for Chicago in January 2023"<br/>
+              • 🌟 <strong>Dynamic Resources:</strong> Ask for specific animal facts, weather reports, or historical climate data!
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -309,7 +309,7 @@ function App() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about weather or animals (e.g., 'Get weather forecast for Providence RI' or 'Tell me about cloudwhales')"
+          placeholder="Ask about weather, animals, or climate data (e.g., 'Generate 5-day weather report for Boston' or 'Tell me dolphin diet facts')"
           onKeyDown={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
           disabled={isLoading || connectionStatus === 'disconnected'}
         />
