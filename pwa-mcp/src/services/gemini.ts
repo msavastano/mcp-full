@@ -4,7 +4,26 @@ import { webSocketService } from './websocket';
 
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-export const callGemini = async (prompt: string, tools: any[]) => {
+export const callGemini = async (prompt: string, tools: any[], resources: any[] = []) => {
+  // Add a resource reading tool for animals if resources are available
+  const resourceTools = resources.length > 0 ? [{
+    name: "read_animal_info",
+    description: "Read information about animals (dolphin, elephant, lion) from resources",
+    parameters: {
+      type: "object",
+      properties: {
+        animal: {
+          type: "string",
+          description: "The animal to get information about (dolphin, elephant, lion, or cloudwhale)",
+          enum: ["dolphin", "elephant", "lion", "cloudwhale"]
+        }
+      },
+      required: ["animal"]
+    }
+  }] : [];
+
+  const allTools = [...tools, ...resourceTools];
+
   const requestBody = {
     contents: [
       {
@@ -18,7 +37,7 @@ export const callGemini = async (prompt: string, tools: any[]) => {
     ],
     tools: [
       {
-        function_declarations: tools,
+        function_declarations: allTools,
       },
     ],
   };
@@ -50,19 +69,32 @@ export const callGemini = async (prompt: string, tools: any[]) => {
       const toolResults = [];
       for (const functionCall of functionCalls) {
         try {
-          const mcpRequest = {
-            "jsonrpc": "2.0",
-            "id": Date.now(),
-            "method": "tools/call",
-            "params": {
-              "name": functionCall.functionCall.name,
-              "arguments": functionCall.functionCall.args || functionCall.functionCall.arguments
-            }
-          };
-          console.log('Sending MCP request:', JSON.stringify(mcpRequest, null, 2));
+          let toolResponse;
           
-          const toolResponse = await webSocketService.sendRequest(mcpRequest);
-          console.log('MCP response:', JSON.stringify(toolResponse, null, 2));
+          if (functionCall.functionCall.name === "read_animal_info") {
+            // Handle resource reading for animals
+            const animal = functionCall.functionCall.args?.animal || functionCall.functionCall.arguments?.animal;
+            const resourceUri = `animal://${animal}`;
+            console.log('Reading resource:', resourceUri);
+            
+            toolResponse = await webSocketService.readResource(resourceUri);
+            console.log('Resource response:', JSON.stringify(toolResponse, null, 2));
+          } else {
+            // Handle regular tool calls
+            const mcpRequest = {
+              "jsonrpc": "2.0",
+              "id": Date.now(),
+              "method": "tools/call",
+              "params": {
+                "name": functionCall.functionCall.name,
+                "arguments": functionCall.functionCall.args || functionCall.functionCall.arguments
+              }
+            };
+            console.log('Sending MCP request:', JSON.stringify(mcpRequest, null, 2));
+            
+            toolResponse = await webSocketService.sendRequest(mcpRequest);
+            console.log('MCP response:', JSON.stringify(toolResponse, null, 2));
+          }
           
           toolResults.push({
             functionResponse: {
@@ -97,7 +129,7 @@ export const callGemini = async (prompt: string, tools: any[]) => {
             parts: toolResults
           }
         ],
-        tools: [{ function_declarations: tools }]
+        tools: [{ function_declarations: allTools }]
       };
       
       const finalResponse = await fetch(API_URL, {

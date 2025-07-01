@@ -7,6 +7,9 @@ function App() {
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [tools, setTools] = useState<any[]>([]);
+  const [resources, setResources] = useState<any[]>([]);
+  const [prompts, setPrompts] = useState<any[]>([]);
+  const [selectedPrompt, setSelectedPrompt] = useState<string>('');
   const [geminiResponses, setGeminiResponses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
@@ -49,6 +52,22 @@ function App() {
         }));
         setTools(cleanedTools);
         setConnectionStatus('connected');
+      } else if (data.result && data.result.resources) {
+        // Handle resources
+        const cleanedResources = data.result.resources.map((resource: any) => ({
+          uri: resource.uri,
+          name: resource.name,
+          description: resource.description,
+        }));
+        setResources(cleanedResources);
+      } else if (data.result && data.result.prompts) {
+        // Handle prompts
+        const cleanedPrompts = data.result.prompts.map((prompt: any) => ({
+          name: prompt.name,
+          description: prompt.description,
+          arguments: prompt.arguments || [],
+        }));
+        setPrompts(cleanedPrompts);
       }
     };
 
@@ -107,7 +126,7 @@ function App() {
     }]);
     
     try {
-      const response = await callGemini(userMessage, tools);
+      const response = await callGemini(userMessage, tools, resources);
       const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received from Gemini';
       
       // Format weather data nicely if it contains weather information
@@ -155,6 +174,42 @@ function App() {
     }
   };
 
+  const handleUsePrompt = async (promptName: string, args: Record<string, any> = {}) => {
+    try {
+      setIsLoading(true);
+      
+      // Get the prompt template
+      const promptResponse = await webSocketService.getPrompt(promptName, args);
+      const promptText = promptResponse.result?.messages?.[0]?.content?.text || 
+                        promptResponse.result?.content || 
+                        'Could not retrieve prompt template';
+      
+      // Use the prompt as input
+      setInput(promptText);
+      
+      // Add user message showing the prompt was used
+      setGeminiResponses(prev => [...prev, {
+        prompt: `Used prompt template: ${promptName}`,
+        response: 'Prompt template loaded. Click "Send to Gemini" to execute.',
+        timestamp: new Date().toLocaleTimeString(),
+        isLoading: false,
+        isPromptTemplate: true
+      }]);
+      
+    } catch (error) {
+      console.error('Error using prompt template:', error);
+      setGeminiResponses(prev => [...prev, {
+        prompt: `Failed to use prompt template: ${promptName}`,
+        response: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        timestamp: new Date().toLocaleTimeString(),
+        isLoading: false,
+        isError: true
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   
 
 
@@ -165,10 +220,49 @@ function App() {
         <div className={`connection-status ${connectionStatus}`}>
           <span className="status-indicator"></span>
           {connectionStatus === 'connecting' && 'Connecting to MCP server...'}
-          {connectionStatus === 'connected' && `Connected (${tools.length} tools available)`}
+          {connectionStatus === 'connected' && `Connected (${tools.length} tools, ${resources.length} resources, ${prompts.length} prompts available)`}
           {connectionStatus === 'disconnected' && 'Disconnected - Check MCP server'}
         </div>
       </div>
+
+      {prompts.length > 0 && (
+        <div className="prompt-templates">
+          <h3>Prompt Templates</h3>
+          <div className="prompt-buttons">
+            {prompts.map((prompt, index) => (
+              <button
+                key={index}
+                className="prompt-button"
+                onClick={() => {
+                  // For simplicity, we'll use default arguments for now
+                  const defaultArgs: Record<string, any> = {};
+                  prompt.arguments?.forEach((arg: any) => {
+                    if (arg.name === 'location' || arg.name === 'destination') {
+                      defaultArgs[arg.name] = 'Providence, RI';
+                    } else if (arg.name === 'animal_name') {
+                      defaultArgs[arg.name] = 'cloudwhale';
+                    } else if (arg.name === 'include_alerts') {
+                      defaultArgs[arg.name] = true;
+                    } else if (arg.name === 'focus') {
+                      defaultArgs[arg.name] = 'general';
+                    } else if (arg.name === 'season') {
+                      defaultArgs[arg.name] = 'current';
+                    }
+                  });
+                  handleUsePrompt(prompt.name, defaultArgs);
+                }}
+                disabled={isLoading}
+                title={prompt.description}
+              >
+                {prompt.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </button>
+            ))}
+          </div>
+          <p className="prompt-help">
+            Click a template to load it with default parameters. You can then modify the prompt before sending.
+          </p>
+        </div>
+      )}
       
       <div className="gemini-conversation">
         <h2>Conversation with Gemini</h2>
@@ -178,7 +272,7 @@ function App() {
               <div className="user-message">
                 <strong>You ({item.timestamp}):</strong> {item.prompt}
               </div>
-              <div className={`gemini-response ${item.isError ? 'error' : ''}`}>
+              <div className={`gemini-response ${item.isError ? 'error' : ''} ${item.isPromptTemplate ? 'prompt-template' : ''}`}>
                 <strong>Gemini:</strong> 
                 {item.isLoading ? (
                   <span className="loading">
@@ -197,10 +291,13 @@ function App() {
           ))}
           {geminiResponses.length === 0 && (
             <div className="empty-state">
-              Ask me about the weather! Try:<br/>
+              Ask me about the weather or animals! Try:<br/>
               • "Get weather forecast for Providence RI"<br/>
               • "Are there any weather alerts in California?"<br/>
-              • "Show me weather warnings for Texas"
+              • "Tell me about dolphins"<br/>
+              • "What do you know about elephants?"<br/>
+              • "Show me information about lions"<br/>
+              • "Tell me about cloudwhales" (🦄 unique to our MCP resources!)
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -212,8 +309,8 @@ function App() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about weather (e.g., 'Get weather forecast for Providence RI' or 'Are there any weather alerts in California?')"
-          onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
+          placeholder="Ask about weather or animals (e.g., 'Get weather forecast for Providence RI' or 'Tell me about cloudwhales')"
+          onKeyDown={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
           disabled={isLoading || connectionStatus === 'disconnected'}
         />
         <button 

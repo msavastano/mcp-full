@@ -57,6 +57,24 @@ class WebSocketService {
         });
         console.log('Tools list response:', toolList);
 
+        // Automatically request the list of resources
+        const resourceList = await this.sendRequest({
+            "jsonrpc": "2.0",
+            "id": this.messageIdCounter++,
+            "method": "resources/list",
+            "params": {}
+        });
+        console.log('Resources list response:', resourceList);
+
+        // Automatically request the list of prompts
+        const promptList = await this.sendRequest({
+            "jsonrpc": "2.0",
+            "id": this.messageIdCounter++,
+            "method": "prompts/list",
+            "params": {}
+        });
+        console.log('Prompts list response:', promptList);
+
       } catch (error) {
         console.error('Initialization failed:', error);
       }
@@ -135,6 +153,29 @@ class WebSocketService {
 
   removeListener(listener: (data: any) => void) {
     this.listeners = this.listeners.filter(l => l !== listener);
+  }
+
+  async readResource(uri: string): Promise<any> {
+    return this.sendRequest({
+      "jsonrpc": "2.0",
+      "id": this.messageIdCounter++,
+      "method": "resources/read",
+      "params": {
+        "uri": uri
+      }
+    });
+  }
+
+  async getPrompt(name: string, args?: Record<string, any>): Promise<any> {
+    return this.sendRequest({
+      "jsonrpc": "2.0",
+      "id": this.messageIdCounter++,
+      "method": "prompts/get",
+      "params": {
+        "name": name,
+        "arguments": args || {}
+      }
+    });
   }
 
   disconnect() {

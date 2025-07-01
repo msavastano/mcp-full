@@ -1,0 +1,18 @@
+The Cloudwhale (Nubis cetaceus) is a magnificent mythical creature that inhabits the upper atmosphere at altitudes of 15,000-25,000 feet. These ethereal beings are semi-translucent and appear to drift gracefully through cloud formations like living zeppelins.
+
+**Physical Characteristics:**
+- Length: 80-120 feet from snout to tail
+- Weight: Surprisingly light due to hollow, gas-filled bones (only 2-3 tons)
+- Coloration: Opalescent white with hints of silver and blue
+- Special feature: Bioluminescent patches that glow softly during twilight hours
+
+**Habitat & Behavior:**
+Cloudwhales migrate seasonally with weather patterns, following jet streams and storm systems. They feed primarily on atmospheric moisture and electrical energy from lightning, which they can absorb through specialized dorsal fins. During mating season, pairs can be seen performing synchronized aerial dances above mountain ranges.
+
+**Conservation Status:**
+Due to climate change and increased air traffic, Cloudwhale populations have declined significantly. They are currently listed as "Critically Ethereal" by the International Council of Atmospheric Wildlife. Only an estimated 47 individuals remain in the wild.
+
+**Cultural Significance:**
+Ancient sky-watching cultures often mistook Cloudwhales for weather omens. Modern meteorologists have noted that their presence often precedes unusual cloud formations and micro-climate changes in mountainous regions.
+
+**Note:** This creature exists only in our MCP resource demonstration and serves to show how the resource protocol accesses local files that wouldn't be found in any external database or API.
