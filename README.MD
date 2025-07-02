@@ -47,7 +47,7 @@ mcp-full/
 ### 🔧 **MCP Tools**
 - **Weather Forecasts**: Get 7-day weather forecasts using National Weather Service API
 - **Weather Alerts**: Active weather alerts, warnings, and watches by US state
-- **Coordinate Resolution**: Intelligent location-to-coordinate conversion
+- **Global Geocoding**: Convert any location worldwide to coordinates using OpenStreetMap
 
 ### 📁 **MCP Resources**
 - **Static Resources**: Animal information files (dolphin, elephant, lion, cloudwhale)
@@ -104,7 +104,7 @@ python mcp_server.py
 ```
 
 The server will start on `localhost:8765` and provide:
-- **2 Tools**: `get_weather_forecast`, `get_weather_alerts`
+- **3 Tools**: `get_weather_forecast`, `get_weather_alerts`, `get_coordinates`
 - **4 Static Resources**: Animal information files
 - **3 Dynamic Resource Templates**: Weather reports, animal facts, climate data
 - **4 Prompt Templates**: Weather briefing, animal profile, habitat weather, travel briefing
@@ -141,14 +141,15 @@ The client will start on `http://localhost:5174` (or another port if 5174 is in 
 
 1. **Start both servers** (MCP server on :8765, React client on :5174)
 2. **Open the React app** in your browser
-3. **Wait for connection** - You should see "Connected (2 tools, 4 resources, 4 prompts available)" in the header
+3. **Wait for connection** - You should see "Connected (3 tools, 4 resources, 4 prompts available)" in the header
 4. **Try these examples**:
 
    **🌤️ Weather Queries:**
    - "Get weather forecast for Providence RI"
-   - "What's the weather like in Boston MA?"
+   - "What's the weather like in Portland Oregon?"
    - "Are there any weather alerts in California?"
-   - "Generate a 5-day weather report for Chicago"
+   - "Show me weather for Paris France"
+   - "Get forecast for Tokyo Japan"
 
    **🐋 Animal Information:**
    - "Tell me about dolphins"
@@ -204,6 +205,13 @@ This demo showcases all major MCP protocol features:
 - **Parameters**:
   - `state` (string): 2-letter US state code (e.g., CA, TX, FL, NY, RI)
 - **Returns**: List of active weather alerts including headline, severity, urgency, and description
+
+#### `get_coordinates`
+- **Description**: Get latitude and longitude coordinates for any location worldwide
+- **Parameters**:
+  - `location` (string): City name, address, or landmark (e.g., "Portland Oregon", "Paris France", "Eiffel Tower")
+- **Returns**: Precise coordinates using OpenStreetMap Nominatim API
+- **Features**: No API key required, global coverage, handles various location formats
 
 ### 📁 **Static Resources**
 

@@ -204,22 +204,137 @@ export const callGemini = async (prompt: string, tools: any[], resources: any[] 
         }
       }
       
-      // Send tool results back to Gemini for final response
-      const finalRequestBody = {
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: prompt }]
-          },
-          {
-            role: 'model',
-            parts: functionCalls.map((fc: any) => ({ functionCall: fc.functionCall }))
-          },
-          {
-            role: 'user',
-            parts: toolResults
+      // Continue conversation until we get a final text response
+      let conversationHistory = [
+        {
+          role: 'user',
+          parts: [{ text: prompt }]
+        },
+        {
+          role: 'model',
+          parts: functionCalls.map((fc: any) => ({ functionCall: fc.functionCall }))
+        },
+        {
+          role: 'user',
+          parts: toolResults
+        }
+      ];
+
+      // Keep calling Gemini until we get a text response (not more function calls)
+      let maxIterations = 5; // Prevent infinite loops
+      let iteration = 0;
+      
+      while (iteration < maxIterations) {
+        const continueRequestBody = {
+          contents: conversationHistory,
+          tools: [{ function_declarations: allTools }]
+        };
+        
+        const continueResponse = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(continueRequestBody)
+        });
+        
+        if (!continueResponse.ok) {
+          throw new Error(`HTTP error! status: ${continueResponse.status}`);
+        }
+        
+        const continueData = await continueResponse.json();
+        console.log(`Gemini Continue Response ${iteration + 1}:`, JSON.stringify(continueData, null, 2));
+        
+        const newCandidate = continueData.candidates?.[0];
+        const newFunctionCalls = newCandidate?.content?.parts?.filter((part: any) => part.functionCall);
+        
+        if (newFunctionCalls && newFunctionCalls.length > 0) {
+          // Gemini wants to call more tools
+          console.log('Gemini requested more tool calls:', JSON.stringify(newFunctionCalls, null, 2));
+          
+          // Execute the new function calls
+          const newToolResults = [];
+          for (const functionCall of newFunctionCalls) {
+            try {
+              let toolResponse;
+              
+              if (functionCall.functionCall.name === "read_animal_info") {
+                const animal = functionCall.functionCall.args?.animal || functionCall.functionCall.arguments?.animal;
+                const resourceUri = `animal://${animal}`;
+                toolResponse = await webSocketService.readResource(resourceUri);
+              } else if (functionCall.functionCall.name === "get_weather_report") {
+                const args = functionCall.functionCall.args || functionCall.functionCall.arguments;
+                const location = args?.location;
+                const days = args?.days;
+                const resourceUri = `weather://report/${location}/${days}`;
+                toolResponse = await webSocketService.readResource(resourceUri);
+              } else if (functionCall.functionCall.name === "get_animal_facts") {
+                const args = functionCall.functionCall.args || functionCall.functionCall.arguments;
+                const species = args?.species;
+                const category = args?.category;
+                const resourceUri = `animal://facts/${species}/${category}`;
+                toolResponse = await webSocketService.readResource(resourceUri);
+              } else if (functionCall.functionCall.name === "get_climate_data") {
+                const args = functionCall.functionCall.args || functionCall.functionCall.arguments;
+                const location = args?.location;
+                const year = args?.year;
+                const month = args?.month;
+                const resourceUri = `climate://${location}/${year}/${month}`;
+                toolResponse = await webSocketService.readResource(resourceUri);
+              } else {
+                // Handle regular tool calls (including new get_coordinates)
+                const mcpRequest = {
+                  "jsonrpc": "2.0",
+                  "id": Date.now(),
+                  "method": "tools/call",
+                  "params": {
+                    "name": functionCall.functionCall.name,
+                    "arguments": functionCall.functionCall.args || functionCall.functionCall.arguments
+                  }
+                };
+                console.log('Sending MCP request:', JSON.stringify(mcpRequest, null, 2));
+                
+                toolResponse = await webSocketService.sendRequest(mcpRequest);
+                console.log('MCP response:', JSON.stringify(toolResponse, null, 2));
+              }
+              
+              newToolResults.push({
+                functionResponse: {
+                  name: functionCall.functionCall.name,
+                  response: toolResponse.result
+                }
+              });
+            } catch (error) {
+              console.error(`Error calling tool ${functionCall.functionCall.name}:`, error);
+              newToolResults.push({
+                functionResponse: {
+                  name: functionCall.functionCall.name,
+                  response: { error: String(error) }
+                }
+              });
+            }
           }
-        ],
+          
+          // Add to conversation history
+          conversationHistory.push({
+            role: 'model',
+            parts: newFunctionCalls.map((fc: any) => ({ functionCall: fc.functionCall }))
+          });
+          conversationHistory.push({
+            role: 'user',
+            parts: newToolResults
+          });
+          
+          iteration++;
+        } else {
+          // Gemini returned a text response, we're done!
+          console.log('Gemini provided final text response');
+          return continueData;
+        }
+      }
+      
+      // If we hit max iterations, return the last response
+      console.warn('Hit max iterations in multi-step tool calling');
+      const finalRequestBody = {
+        contents: conversationHistory,
         tools: [{ function_declarations: allTools }]
       };
       
@@ -229,12 +344,7 @@ export const callGemini = async (prompt: string, tools: any[], resources: any[] 
         body: JSON.stringify(finalRequestBody)
       });
       
-      if (!finalResponse.ok) {
-        throw new Error(`HTTP error! status: ${finalResponse.status}`);
-      }
-      
       const finalData = await finalResponse.json();
-      console.log('Gemini Final Response:', JSON.stringify(finalData, null, 2));
       return finalData;
     }
     

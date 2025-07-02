@@ -254,7 +254,7 @@ function App() {
                 disabled={isLoading}
                 title={prompt.description}
               >
-                {prompt.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                {prompt.name.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
               </button>
             ))}
           </div>
@@ -291,13 +291,12 @@ function App() {
           ))}
           {geminiResponses.length === 0 && (
             <div className="empty-state">
-              Ask me about weather, animals, or climate data! Try:<br/>
+              Ask me about weather or animals! Try:<br/>
               • "Get weather forecast for Providence RI"<br/>
               • "Generate a 7-day weather report for Boston"<br/>
               • "Tell me about dolphin behavior facts"<br/>
               • "What are cloudwhale conservation facts?"<br/>
-              • "Show me climate data for Chicago in January 2023"<br/>
-              • 🌟 <strong>Dynamic Resources:</strong> Ask for specific animal facts, weather reports, or historical climate data!
+              • 🌟 <strong>Dynamic Resources:</strong> Ask for specific animal facts, or weather reports!
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -327,7 +326,9 @@ function App() {
         <div className="messages">
           {messages.map((msg, index) => (
             <div key={index} className="message">
-              {JSON.stringify(msg, null, 2)}
+              <pre className="json-pretty">
+                {JSON.stringify(msg, null, 2)}
+              </pre>
             </div>
           ))}
         </div>

@@ -55,13 +55,81 @@ def get_weather_alerts(state: str) -> List[Dict[str, Any]]:
 
 
 @server.tool()
+def get_coordinates(location: str) -> Dict[str, Any]:
+    """Get latitude and longitude coordinates for any city or location worldwide using OpenStreetMap.
+    
+    This tool can find coordinates for cities, addresses, landmarks, and locations globally.
+    Use this when you need coordinates for the weather forecast tool.
+    
+    Examples: 'Boston MA', 'Paris France', 'Tokyo', '1600 Pennsylvania Avenue', 'Eiffel Tower'
+    
+    Returns latitude and longitude that can be used with get_weather_forecast."""
+    
+    import urllib.parse
+    import time
+    
+    try:
+        # URL encode the location query
+        encoded_location = urllib.parse.quote(location)
+        
+        # OpenStreetMap Nominatim API (free, no API key required)
+        url = f"https://nominatim.openstreetmap.org/search?q={encoded_location}&format=json&limit=1&addressdetails=1"
+        
+        # Add delay to respect rate limiting (1 request per second)
+        time.sleep(1)
+        
+        # Make the request with proper headers
+        from urllib.request import Request
+        headers = {
+            'User-Agent': 'MCP-Weather-Demo/1.0 (Educational Demo)'
+        }
+        
+        request = Request(url, headers=headers)
+        
+        with urlopen(request) as response:
+            data = json.loads(response.read().decode())
+        
+        if data and len(data) > 0:
+            result = data[0]
+            lat = float(result['lat'])
+            lon = float(result['lon'])
+            
+            # Extract display name for confirmation
+            display_name = result.get('display_name', location)
+            
+            return {
+                "location": location,
+                "display_name": display_name,
+                "latitude": lat,
+                "longitude": lon,
+                "found": True,
+                "source": "OpenStreetMap Nominatim"
+            }
+        else:
+            return {
+                "location": location,
+                "error": f"No coordinates found for '{location}'. Try being more specific (e.g., add state/country).",
+                "found": False,
+                "suggestion": "Try adding more details like state, country, or specific address"
+            }
+    
+    except Exception as e:
+        return {
+            "location": location,
+            "error": f"Failed to get coordinates: {str(e)}",
+            "found": False,
+            "fallback": "You may need to provide approximate coordinates manually"
+        }
+
+
+@server.tool()
 def get_weather_forecast(latitude: float, longitude: float) -> Dict[str, Any]:
-    """Get weather forecast for the given coordinates. Requires exact latitude and longitude values. 
-    If you only have a location name like 'Providence RI', you'll need to look up the coordinates first:
-    Providence, RI is approximately 41.8240, -71.4128
-    Boston, MA is approximately 42.3601, -71.0589
-    New York, NY is approximately 40.7128, -74.0060
-    For other locations, use your knowledge of geography to provide approximate coordinates."""
+    """Get weather forecast for the given coordinates.
+    
+    If you need to convert a city name to coordinates, use the get_coordinates tool first.
+    You can also use your geographic knowledge for well-known cities if preferred.
+    
+    This tool requires exact latitude and longitude values."""
     if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
         raise ValueError("Invalid coordinates")
     
@@ -234,84 +302,84 @@ def get_animal_facts(species: str, category: str) -> str:
 *This information was dynamically retrieved using MCP resource templates.*"""
 
 
-@server.resource("climate://{location}/{year}/{month}", name="climate-data", description="Get historical climate data for specific location and time")
-def get_climate_data(location: str, year: str, month: str) -> str:
-    """Get historical climate data for a specific location and time period."""
-    try:
-        year_int = int(year)
-        month_int = int(month)
+# @server.resource("climate://{location}/{year}/{month}", name="climate-data", description="Get historical climate data for specific location and time")
+# def get_climate_data(location: str, year: str, month: str) -> str:
+#     """Get historical climate data for a specific location and time period."""
+#     try:
+#         year_int = int(year)
+#         month_int = int(month)
         
-        if year_int < 1900 or year_int > 2024:
-            return "Error: Year must be between 1900 and 2024"
+#         if year_int < 1900 or year_int > 2024:
+#             return "Error: Year must be between 1900 and 2024"
         
-        if month_int < 1 or month_int > 12:
-            return "Error: Month must be between 1 and 12"
+#         if month_int < 1 or month_int > 12:
+#             return "Error: Month must be between 1 and 12"
         
-        month_names = ["", "January", "February", "March", "April", "May", "June",
-                      "July", "August", "September", "October", "November", "December"]
+#         month_names = ["", "January", "February", "March", "April", "May", "June",
+#                       "July", "August", "September", "October", "November", "December"]
         
-        # Sample climate data (in real implementation, this would query historical weather APIs)
-        climate_report = f"""# Climate Data for {location.title()}
+#         # Sample climate data (in real implementation, this would query historical weather APIs)
+#         climate_report = f"""# Climate Data for {location.title()}
 
-**Location**: {location.title()}
-**Period**: {month_names[month_int]} {year}
-**Resource URI**: climate://{location}/{year}/{month}
-**Generated**: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+# **Location**: {location.title()}
+# **Period**: {month_names[month_int]} {year}
+# **Resource URI**: climate://{location}/{year}/{month}
+# **Generated**: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-## Historical Climate Summary
+# ## Historical Climate Summary
 
-This is a demonstration of dynamic climate data retrieval using MCP resource templates. In a real implementation, this would provide:
+# This is a demonstration of dynamic climate data retrieval using MCP resource templates. In a real implementation, this would provide:
 
-- **Average Temperature**: Historical temperature data for the specified month/year
-- **Precipitation**: Rainfall and snowfall records
-- **Weather Patterns**: Typical weather conditions for the period
-- **Climate Anomalies**: Unusual weather events during this time
-- **Seasonal Trends**: How this period compared to historical averages
+# - **Average Temperature**: Historical temperature data for the specified month/year
+# - **Precipitation**: Rainfall and snowfall records
+# - **Weather Patterns**: Typical weather conditions for the period
+# - **Climate Anomalies**: Unusual weather events during this time
+# - **Seasonal Trends**: How this period compared to historical averages
 
 ## Resource Template Features
 
-- **Dynamic URI Resolution**: climate://{location}/{year}/{month}
-- **Parameter Validation**: Year (1900-2024), Month (1-12)
-- **On-Demand Generation**: Content created when accessed
-- **Scalable Content**: Can generate data for any valid parameter combination
+# - **Dynamic URI Resolution**: climate://{location}/{year}/{month}
+# - **Parameter Validation**: Year (1900-2024), Month (1-12)
+# - **On-Demand Generation**: Content created when accessed
+# - **Scalable Content**: Can generate data for any valid parameter combination
 
-*This demonstrates how MCP resource templates enable infinite content combinations without pre-creating static files.*"""
+# *This demonstrates how MCP resource templates enable infinite content combinations without pre-creating static files.*"""
         
-        return climate_report
+#         return climate_report
         
-    except ValueError:
-        return "Error: Year and month must be valid numbers"
-    except Exception as e:
-        return f"Error generating climate data: {str(e)}"
+#     except ValueError:
+#         return "Error: Year and month must be valid numbers"
+#     except Exception as e:
+#         return f"Error generating climate data: {str(e)}"
 
 
-@server.prompt()
-def weather_briefing(location: str, include_alerts: bool = True) -> str:
-    """Generate a comprehensive weather briefing for a specific location.
+# @server.prompt()
+# def weather_briefing(location: str, include_alerts: bool = True) -> str:
+#     """Generate a comprehensive weather briefing for a specific location.
     
-    Args:
-        location: The location to get weather for (e.g., "Providence, RI")
-        include_alerts: Whether to include weather alerts (default: True)
-    """
-    prompt = f"""You are a professional meteorologist. Please provide a comprehensive weather briefing for {location}.
+#     Args:
+#         location: The location to get weather for (e.g., "Providence, RI")
+#         include_alerts: Whether to include weather alerts (default: True)
+#     """
+#     prompt = f"""You are a professional meteorologist. Please provide a comprehensive weather briefing for {location}.
 
-Your briefing should include:
-1. Current conditions and temperature
-2. Detailed forecast for the next 3-7 days
-3. Any notable weather patterns or trends
-4. Recommendations for outdoor activities
-"""
+# Your briefing should include:
+# 1. Current conditions and temperature
+# 2. Detailed forecast for the next 3-7 days
+# 3. Any notable weather patterns or trends
+# 4. Recommendations for outdoor activities
+# """
     
-    if include_alerts:
-        prompt += """5. Any active weather alerts, warnings, or watches
-6. Safety recommendations if severe weather is expected
-"""
+#     if include_alerts:
+#         prompt += """5. Any active weather alerts, warnings, or watches
+# 6. Safety recommendations if severe weather is expected
+# """
     
-    prompt += """
-Format your response in a clear, professional manner that would be suitable for a weather briefing.
-Use the available weather tools to get accurate, up-to-date information."""
+#     prompt += """
+# Format your response in a clear, professional manner that would be suitable for a weather briefing.
+# Use the available weather tools to get accurate, up-to-date information."""
     
-    return prompt
+#     return prompt
 
 
 @server.prompt()
