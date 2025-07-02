@@ -11,7 +11,6 @@ graph TD;
     D -->|7- Tool results| B;
     B -->|8- Results to LLM| C;
     C -->|9- Formatted response| B;
-    B -->|10- Display| F;
     D -.->|0- Available tools| B;
 ```
 
