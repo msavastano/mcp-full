@@ -9,7 +9,6 @@ function App() {
   const [tools, setTools] = useState<any[]>([]);
   const [resources, setResources] = useState<any[]>([]);
   const [prompts, setPrompts] = useState<any[]>([]);
-  const [selectedPrompt, setSelectedPrompt] = useState<string>('');
   const [geminiResponses, setGeminiResponses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
