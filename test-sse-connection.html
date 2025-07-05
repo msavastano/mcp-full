@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test SSE Connection</title>
+</head>
+<body>
+    <h1>SSE Connection Test</h1>
+    <div id="status">Testing connection...</div>
+    <div id="messages"></div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const messagesDiv = document.getElementById('messages');
+        
+        function log(message) {
+            console.log(message);
+            messagesDiv.innerHTML += '<div>' + message + '</div>';
+        }
+        
+        // Test basic fetch first
+        fetch('http://localhost:8766/')
+            .then(response => {
+                log('✅ Basic HTTP request succeeded');
+                return response.text();
+            })
+            .then(data => {
+                log('📊 Response: ' + data.substring(0, 100));
+            })
+            .catch(error => {
+                log('❌ Basic HTTP request failed: ' + error);
+            });
+        
+        // Test SSE connection
+        try {
+            const eventSource = new EventSource('http://localhost:8766/mcp/sse');
+            
+            eventSource.onopen = function(event) {
+                statusDiv.textContent = '✅ SSE Connected';
+                log('✅ SSE connection opened');
+            };
+            
+            eventSource.onmessage = function(event) {
+                log('📨 SSE message: ' + event.data);
+            };
+            
+            eventSource.onerror = function(event) {
+                statusDiv.textContent = '❌ SSE Connection Error';
+                log('❌ SSE error: ' + JSON.stringify(event));
+                console.error('SSE Error:', event);
+            };
+            
+        } catch (error) {
+            statusDiv.textContent = '❌ SSE Failed to Start';
+            log('❌ SSE failed to start: ' + error);
+        }
+    </script>
+</body>
+</html>
