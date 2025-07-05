@@ -72,25 +72,55 @@ def get_coordinates(location: str) -> Dict[str, Any]:
         # URL encode the location query
         encoded_location = urllib.parse.quote(location)
         
-        # OpenStreetMap Nominatim API (free, no API key required)
-        url = f"https://nominatim.openstreetmap.org/search?q={encoded_location}&format=json&limit=1&addressdetails=1"
+        # Try multiple search strategies
+        search_urls = []
         
-        # Add delay to respect rate limiting (1 request per second)
-        time.sleep(1)
+        # First try: original query
+        search_urls.append(f"https://nominatim.openstreetmap.org/search?q={encoded_location}&format=json&limit=5&addressdetails=1")
         
-        # Make the request with proper headers
-        from urllib.request import Request
-        headers = {
-            'User-Agent': 'MCP-Weather-Demo/1.0 (Educational Demo)'
-        }
+        # Second try: add "United States" if it looks like a US location
+        if any(state in location.upper() for state in ['RI', 'MA', 'NY', 'CA', 'TX', 'FL', 'IL', 'PA', 'OH', 'MI', 'GA', 'NC', 'NJ', 'VA', 'WA', 'AZ', 'TN', 'IN', 'MO', 'MD', 'WI', 'CO', 'MN', 'SC', 'AL', 'LA', 'KY', 'OR', 'OK', 'CT', 'IA', 'MS', 'AR', 'KS', 'UT', 'NV', 'NM', 'WV', 'NE', 'ID', 'HI', 'NH', 'ME', 'MT', 'DE', 'SD', 'ND', 'AK', 'VT', 'WY']):
+            us_query = urllib.parse.quote(f"{location} United States")
+            search_urls.append(f"https://nominatim.openstreetmap.org/search?q={us_query}&format=json&limit=5&addressdetails=1")
         
-        request = Request(url, headers=headers)
-        
-        with urlopen(request) as response:
-            data = json.loads(response.read().decode())
+        data = []
+        for url in search_urls:
+            # Add delay to respect rate limiting (1 request per second)
+            time.sleep(1)
+            
+            # Make the request with proper headers
+            from urllib.request import Request
+            headers = {
+                'User-Agent': 'MCP-Weather-Demo/1.0 (Educational Demo)'
+            }
+            
+            request = Request(url, headers=headers)
+            
+            with urlopen(request) as response:
+                batch_data = json.loads(response.read().decode())
+                data.extend(batch_data)
+                
+                # If we found US results, break early
+                if any('United States' in r.get('display_name', '') for r in batch_data):
+                    break
         
         if data and len(data) > 0:
-            result = data[0]
+            # Priority selection: prefer US locations for common US city names
+            result = data[0]  # default to first result
+            
+            # Check if we have multiple results and prioritize US locations
+            if len(data) > 1:
+                # Look for US locations first
+                us_results = [r for r in data if 'United States' in r.get('display_name', '')]
+                if us_results:
+                    result = us_results[0]
+                else:
+                    # If no US results, look for results with state abbreviations
+                    state_results = [r for r in data if any(f' {state} ' in r.get('display_name', '') or r.get('display_name', '').endswith(f' {state}') 
+                                                          for state in ['RI', 'MA', 'NY', 'CA', 'TX', 'FL', 'IL', 'PA', 'OH', 'MI', 'GA', 'NC', 'NJ', 'VA', 'WA', 'AZ', 'TN', 'IN', 'MO', 'MD', 'WI', 'CO', 'MN', 'SC', 'AL', 'LA', 'KY', 'OR', 'OK', 'CT', 'IA', 'MS', 'AR', 'KS', 'UT', 'NV', 'NM', 'WV', 'NE', 'ID', 'HI', 'NH', 'ME', 'MT', 'DE', 'SD', 'ND', 'AK', 'VT', 'WY'])]
+                    if state_results:
+                        result = state_results[0]
+            
             lat = float(result['lat'])
             lon = float(result['lon'])
             
@@ -124,12 +154,15 @@ def get_coordinates(location: str) -> Dict[str, Any]:
 
 @server.tool()
 def get_weather_forecast(latitude: float, longitude: float) -> Dict[str, Any]:
-    """Get weather forecast for the given coordinates.
+    """Get REAL-TIME weather forecast from National Weather Service for the given coordinates.
+    
+    Use this tool when users ask for "forecast", "weather forecast", or current/upcoming weather conditions.
+    This provides live weather data from the National Weather Service API.
     
     If you need to convert a city name to coordinates, use the get_coordinates tool first.
     You can also use your geographic knowledge for well-known cities if preferred.
     
-    This tool requires exact latitude and longitude values."""
+    This tool requires exact latitude and longitude values and works for US locations only."""
     if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
         raise ValueError("Invalid coordinates")
     

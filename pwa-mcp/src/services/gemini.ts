@@ -22,7 +22,7 @@ export const callGemini = async (prompt: string, tools: any[], resources: any[] 
     },
     {
       name: "get_weather_report",
-      description: "Generate dynamic weather report for any location and time period using resource templates",
+      description: "Generate a formatted weather REPORT with specific number of days using static templates. Use this tool when users ask for a 'weather report' AND specify a number of days (e.g., '5-day weather report', 'weather report for 3 days'). This provides pre-formatted sample data, not real-time weather.",
       parameters: {
         type: "object",
         properties: {
